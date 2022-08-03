@@ -77,8 +77,20 @@ usertrap(void)
     exit(-1);
 
   // give up the CPU if this is a timer interrupt.
-  if(which_dev == 2)
+  if(which_dev == 2) {
+    // hardware clock interrupt
+    struct proc* p = myproc();
+    ++(myproc()->ticks_since_last_call_handler);
+    if (!p->handling && p->interval > 0 && p->ticks_since_last_call_handler >= p->interval) {
+      // call handler
+      p->ticks_since_last_call_handler = 0;
+      //p->interval = 0;
+      p->handling = 1;
+      p->savedfr = *p->trapframe;
+      p->trapframe->epc = (uint64)p->handler;
+    }
     yield();
+  }
 
   usertrapret();
 }
